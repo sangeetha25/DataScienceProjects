@@ -1,0 +1,36 @@
+import spacy
+from spacy import displacy
+import en_core_web_sm
+import requests
+from bs4 import BeautifulSoup as bsoup
+
+'using beautiful soup to extract an article from inshorts page'
+url = "https://inshorts.com/en/read"
+resp = requests.get(url)
+if resp.status_code==200:
+    print("success reading data from url")
+    soup = bsoup(resp.content,'html.parser')
+    allnews = soup.find_all('div',class_="news-card-content news-right-box")
+    news=[]
+    for i in allnews:
+        news.append(i.find('div',attrs={'itemprop':'articleBody'}).get_text())
+#     print(news)
+ 
+ 'using spacy to mask name, org and money entities'
+nlp = en_core_web_sm.load()
+full_unmasked_doc = nlp(' '.join(news))
+full_doc=[]
+for i in news:
+    doc = nlp(i)
+    new_doc=doc
+    for j in doc.ents:
+        if j.label_=="PERSON" or j.label_=="MONEY" or j.label_=="ORG":
+            new_doc = str(new_doc).replace(j.text,'MASK')
+    full_doc.append(new_doc)
+# print(full_doc)
+
+'using spacy displacy to visualise entities'
+displacy.render(full_unmasked_doc,jupyter=True,style='ent')
+
+'using spacy to display the dependency parsing of the sentence'
+displacy.render(nlp(news[3].split('.')[1]),style='dep',options={'distance':80})
